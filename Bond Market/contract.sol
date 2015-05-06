@@ -149,4 +149,8 @@ contract BondMarket {
 			balances[to] += amt;
 		}
 	}
+
+	function time() returns (uint) {
+		return now;
+	}
 }
