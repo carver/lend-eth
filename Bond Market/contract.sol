@@ -64,12 +64,20 @@ contract BondMarket {
 	}
 	
 	function collect(uint loanId) {
+		collectTime(loanId, now);
+	}
+
+	//TODO: make private, was useful to be public for testing
+	//returns how much is collected
+	function collectTime(uint loanId, uint attime) returns (uint) {
 		Loan loan = loans[loanId];
 		
 		//collect interest
-		uint hoursDue = (now - loan.startTime) / 3600 - loan.hoursCollected;
-		if (hoursDue > 0) {
-			uint amountDue = hoursDue * loan.principle * loan.ask.hourlyReturn / 1 ether; //TODO: check for numerator overflows
+		uint collectibleHours = (attime - loan.startTime) / 3600;
+		uint amountDue = 0;
+		if (attime > loan.startTime && collectibleHours > loan.hoursCollected) {
+			uint hoursDue = collectibleHours - loan.hoursCollected;
+			amountDue = hoursDue * loan.principle * loan.ask.hourlyReturn / 1 ether; //TODO: check for numerator overflows
 			if (amountDue <= balances[loan.ask.asker]) {
 				transfer(loan.ask.asker, loan.lender, amountDue);
 				loan.hoursCollected += hoursDue;
@@ -78,9 +86,10 @@ contract BondMarket {
 		
 		//collect principle
 		uint dueTime = loan.startTime + loan.ask.duration * 3600;
-		if (now >= dueTime) {
-			payPrinciple(loanId);
+		if (attime >= dueTime) {
+			amountDue += payPrinciple(loanId);
 		}
+		return amountDue;
 	}
 	
 	function payDownLoan(uint loanId) {
