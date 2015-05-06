@@ -93,24 +93,29 @@ contract BondMarket {
 	}
 	
 	function payDownLoan(uint loanId) {
+		payDownLoanTime(loanId, now);
+	}
+	
+	//TODO: make private, just useful to set time for testing
+	function payDownLoanTime(uint loanId, uint attime) returns (uint paid) {
 		Loan loan = loans[loanId];
 		if (msg.sender != loan.ask.asker) {
 			return ;
 		}
 		deposit(); //this prepay action may include funds to execute
 		
-		//force interest collection
-		collect(loanId);
+		//force interest collection on this loan
+		paid = collectTime(loanId, attime);
 		
-		payPrinciple(loanId);
+		paid += payPrinciple(loanId);
 	}
 	
 	//assumes it's okay to pay now, due to borrower opt-in or due date passed
-	function payPrinciple(uint loanId) private {
+	function payPrinciple(uint loanId) private returns (uint amount) {
 		Loan loan = loans[loanId];
 		//don't prepay before outstanding debts are covered
 		forceCollection(loan.ask.asker);
-		uint amount = loan.principle;
+		amount = loan.principle;
 		if (amount > balances[loan.ask.asker]) {
 			amount = balances[loan.ask.asker];
 		}
