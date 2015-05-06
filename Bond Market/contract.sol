@@ -20,7 +20,12 @@ contract BondMarket {
 	
 	mapping (address => uint) balances;
 	
-	//TODO - on deposit or transfer, force collection of unpaid loans
+	struct Queue {
+		uint start;
+		uint[] vals;
+	}
+	mapping (address => Queue) outstandingLoans; //by borrower, ordered by first to borrow
+
 	//some reward for effort?
 	//TODO - sweep abandoned accounts after 2 years, keep track of amounts for future claims
 	//TODO - charge (optional?) fee to screen for spam (allow the ask to post, but mark as spam)
@@ -40,7 +45,7 @@ contract BondMarket {
 		return numAsks-1;
 	}
 	
-	function sendLoan(uint askId, uint amount) returns (uint) {
+	function sendLoan(uint askId, uint amount) returns (uint loanId) {
 		deposit();
 		forceCollection(msg.sender); //can't loan out to others when you have outstanding payments
 		Ask ask = asks[askId];
@@ -58,7 +63,9 @@ contract BondMarket {
 			if (newAskSize == 0) {
 				delete asks[askId];
 			}
-			return numLoans-1;
+			loanId = numLoans-1;
+			uint[] askerLoans = outstandingLoans[loan.ask.asker].vals;
+			askerLoans[askerLoans.length++] = loanId;
 		}
 		return 0;
 	}
@@ -124,7 +131,32 @@ contract BondMarket {
 	}
 	
 	function forceCollection(address fromUser) {
-		//TODO for each open loan, collect()
+		Queue loanQueue = outstandingLoans[fromUser];
+		uint loanCount = loanQueue.vals.length;
+		for (uint i = loanQueue.start; i < loanCount; i++) {
+			uint loanId = loanQueue.vals[i];
+			Loan loan = loans[loanId];
+			if (loan.principle == 0) {
+				loanQueue.start++;
+				if (loanQueue.start * 2 > loanQueue.vals.length) {
+					repackOutstandingLoans(fromUser);
+					forceCollection(fromUser);
+					return;
+				}
+			}
+			collect(loanId);
+		}
+	}
+
+	function repackOutstandingLoans(address user) {
+		Queue queue = outstandingLoans[user];
+		uint[] vals = queue.vals;
+		uint readIndex = queue.start;
+		uint newSize = queue.vals.length - readIndex;
+		for (uint i = 0; i < newSize; i++) {
+			vals[i] = vals[readIndex + i];
+		}
+		vals.length = newSize;
 	}
 	
 	function balance() returns (uint) {
