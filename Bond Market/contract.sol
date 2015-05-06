@@ -31,11 +31,12 @@ contract BondMarket {
 		numLoans = 1;
 	}
 	
-	function newAsk(uint amount, uint hourlyReturn) returns (uint) {
+	function newAsk(uint amount, uint hourlyReturn, uint numHours) returns (uint) {
 		Ask ask = asks[numAsks++];
 		ask.amount = amount;
 		ask.hourlyReturn = hourlyReturn;
 		ask.asker = msg.sender;
+		ask.duration = numHours;
 		return numAsks-1;
 	}
 	
