@@ -5,7 +5,7 @@ contract BondMarket {
 		address asker;
 		uint duration; //duration in hours
 	}
-	mapping (uint => Ask) asks;
+	mapping (uint => Ask) public asks;
 	uint numAsks;
 	
 	struct Loan {
@@ -21,10 +21,12 @@ contract BondMarket {
 	mapping (address => uint) balances;
 	
 	//TODO - on deposit or transfer, force collection of unpaid loans
+	//some reward for effort?
 	//TODO - sweep abandoned accounts after 2 years, keep track of amounts for future claims
 	//TODO - charge (optional?) fee to screen for spam (allow the ask to post, but mark as spam)
 	
 	function BondMarket() {
+		//let 0 be a special case, so start on id 1
 		numAsks = 1;
 		numLoans = 1;
 	}
