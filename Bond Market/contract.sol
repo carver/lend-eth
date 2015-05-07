@@ -69,6 +69,7 @@ contract BondMarket {
 			loanId = numLoans-1;
 			uint[] askerLoans = outstandingLoans[loan.ask.asker].vals;
 			askerLoans[askerLoans.length++] = loanId;
+			return loanId;
 		}
 		return 0;
 	}
