@@ -49,6 +49,9 @@ contract BondMarket {
 		deposit();
 		forceCollection(msg.sender); //can't loan out to others when you have outstanding payments
 		Ask ask = asks[askId];
+		if (ask.amount < amount) {
+			amount = ask.amount;
+		}
 		uint newAskSize = ask.amount - amount;
 		if (ask.amount > 0 && newAskSize >= 0 && balances[msg.sender] >= amount) {
 			Loan loan = loans[numLoans++];
