@@ -4,7 +4,44 @@
 </script>
 </head>
 <body>
+	<h1>Borrow</h1>
+	<input type="number" placeholder="amount to borrow" id="borrow-amount" onchange="previewBorrow()" onkeydown="previewBorrow()" onkeyup="previewBorrow()" />
+	<input type="number" placeholder="hours till due" id="borrow-duration" onchange="previewBorrow()" onkeydown="previewBorrow()" onkeyup="previewBorrow()" />
+		<!-- TODO: awesomer time duration input -->
+	<input placeholder="annual interest rate" id="borrow-apr" onchange="previewBorrow()" onkeydown="previewBorrow()" onkeyup="previewBorrow()" />
+	<fieldset ><legend>Preview</legend>
+		<div>Borrowing: <span id="borrow-preview-amount"></span></div>
+		<div>Principle Due Date: <span id="borrow-preview-due-date"></span></div>
+		<div>ether due each day: <span id="borrow-preview-daily-ether"></span></div>
+		<div>approximate daily interest rate: <span id="borrow-preview-daily-rate"></span>%</div>
+		<div>warnings: <span id="borrow-preview-warnings">None</span></div>
+		<button onclick="confirmBorrow()">Confirm Borrow</button>
+	</fieldset>
+	<h1>Lend</h1>
 <script>
+	function id(theid) {
+		return document.getElementById(theid);
+	}
+	function calcBorrowParams() {
+		var amount = id('borrow-amount').value;
+		var numHours = id('borrow-duration').value;
+		var annualGrowth = 1+id('borrow-apr').value/100;
+		var weiPerHourPerEther = Math.floor(web3.toWei(Math.pow(annualGrowth, (1/365/24)) - 1), "ether");
+		var weiPerHour = weiPerHourPerEther * amount;
+		return {amount: web3.toWei(amount, "ether"), hourlyReturn: weiPerHour, duration: numHours};
+	}
+	function previewBorrow() {
+		var ask = calcBorrowParams();
+		id('borrow-preview-amount').innerText = web3.fromWei(ask.amount, "ether");
+		id('borrow-preview-due-date').innerText = new Date(new Date().getTime() + 3600000 * ask.duration);
+		var annualGrowth = 1+id('borrow-apr').value/100;
+		id('borrow-preview-daily-rate').innerText = Math.floor(10000 * 100 * (Math.pow(annualGrowth, (1/365)) - 1 )) / 10000;
+		id('borrow-preview-daily-ether').innerText = web3.fromWei(ask.hourlyReturn * 24, "ether");
+	}
+	function confirmBorrow() {
+		var ask = calcBorrowParams();
+		contracts["BondMarket"].contract.newAsk(ask.amount, ask.hourlyReturn, ask.duration);
+	}
 </script>
 </body>
 </html>
