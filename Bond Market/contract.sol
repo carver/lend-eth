@@ -119,6 +119,11 @@ contract BondMarket {
 		//force interest collection on this loan
 		paid = collectTime(loanId, attime);
 		
+		if (loan.startTime + 3600 > attime) {
+			//if paying down within the first hour, must pay at least 1 hour's interest
+			paid += collectTime(loanId, loan.startTime + 3601);
+		}
+
 		paid += payPrinciple(loanId);
 	}
 	
