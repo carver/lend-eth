@@ -1,61 +1,10 @@
 <html>
 <head>
 <script>
-	function resetQ() {
-		var uq = contracts["UintQueue"].contract;
-		while (uq.length() > 0) {
-			console.log('popping from queue for reset')
-			uq.dequeue(function (err,res) {
-				if (err) console.error(err);
-			});
-		}
-		console.log('reset complete');
-	}
-	function assertEq(a, b, addendum) {
-		var msg = a+" not equal to "+b+" - "+addendum;
-		if (a != b) {
-			alert(msg);
-			throw msg;
-		}
-		else {
-			console.log("test passed: "+msg)
-		}
-	}
-	function addRemove() {
-		var uq = contracts["UintQueue"].contract;
-		for(var i=0; i < 10; i++) {
-			//what's the right way to get the returned value of a transaction?
-			var val = i;
-			uq.queue(i);
-			//alert(val);
-			assertEq(1, uq.length(), "length fail");
-			uq.dequeue();
-			assertEq(0, uq.length(), "length fail");
-		}
-	}
-	function addsRemoves(size) {
-		var uq = contracts["UintQueue"].contract;
-		for(var i=0; i < size; i++) {
-			uq.queue(i);
-			assertEq(i+1, uq.length(), "adding increases length by 1");
-		}
-		for(var i=0; i < size; i++) {
-			uq.dequeue();
-			assertEq(size - i - 1, uq.length(), "removing decreases length by 1");
-		}
-	}
-	function tests() {
-		console.log("start test");
-		resetQ();
-		addsRemoves(100);
-		addRemove();
-		alert("success!");
-	}
 </script>
 </head>
 <body>
 <script>
 </script>
-	<button onclick="tests()">test</button>
 </body>
 </html>
