@@ -153,7 +153,9 @@ contract BondMarket {
 		}
 	}
 
-	function repackOutstandingLoans(address user) {
+	//after paying back loans, they don't need to be in the outstandingLoans array anymore,
+	//	resize the array to avoid a memory leak
+	function repackOutstandingLoans(address user) private {
 		Queue queue = outstandingLoans[user];
 		uint[] vals = queue.vals;
 		uint readIndex = queue.start;
