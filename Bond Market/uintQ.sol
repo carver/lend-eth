@@ -1,3 +1,10 @@
+/*
+Below is a concept for a managed queue as a contract.  The idea was to build a contract for data structure re-use.
+
+The test didn't yield much, because I still haven't figured out the right way to call into it from other contracts cleanly.
+
+No matter, it isn't crucial to this project.
+*/
 contract UintQueue {
 	uint[] array0;
 	uint[] array1;
