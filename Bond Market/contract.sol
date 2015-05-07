@@ -74,8 +74,9 @@ contract BondMarket {
 		return 0;
 	}
 	
-	function collect(uint loanId) {
-		collectTime(loanId, now);
+	//@Note collect the interest and principle due on loan id `loanId`, returning amount collected in wei
+	function collect(uint loanId) returns (uint) {
+		return collectTime(loanId, now);
 	}
 
 	//TODO: make private, was useful to be public for testing
