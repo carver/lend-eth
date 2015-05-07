@@ -1,4 +1,28 @@
+/*
+This contract facilitates unsecured loans of arbitrary duration and yield.
+It lists outstanding requests for borrowing. When lending out cash, this
+contract also tracks the interest due, and facilitates collection of
+deposited funds.
+
+Interest does not compound, but is collectable by the lender every hour, as
+long as the borrower has funds deposited.
+
+Note some key properties of these loans:
+ * the coupon/interest payments are due hourly, enabling very short loans
+ * loans can be offered in any length desired (in one hour blocks)
+ * the contract ensures automatic payment of loans with payment due before paying down principle early
+ * early payment is allowed without penalty (except within an hour, when at least one hour of interest is charged)
+
+TODO: track repayment to compile credit history
+TODO: charge optional fee to judge credit and seriousness of new asks
+TODO: compound the interest by adding due interest to principle if the coupon is unpayable due to insufficient funds
+private:
+TODO: sweep abandoned accounts after 2 years, keep track of amounts for future claims
+TODO: make collectTime() private
+TODO: make payDownLoanTime() private
+*/
 contract BondMarket {
+	//An outstanding request for a loan
 	struct Ask {
 		uint amount;
 		uint hourlyReturn; //every hour, this much new wei is due back per ether borrowed
@@ -12,30 +36,29 @@ contract BondMarket {
 		Ask ask;
 		address lender;
 		uint principle;
-		uint startTime;
-		uint hoursCollected;
+		uint startTime; //principle will be due at time: startTime + 3600 * ask.duration
+		uint hoursCollected; //how many hours of interest have been collected
 	}
 	mapping (uint => Loan) loans;
 	uint numLoans;
 	
+	//deposited funds, in ether
 	mapping (address => uint) balances;
 	
+	//An ordered list, designed to reclaim garbage space after it drops below 50% filled
 	struct Queue {
 		uint start;
 		uint[] vals;
 	}
 	mapping (address => Queue) outstandingLoans; //by borrower, ordered by first to borrow
-
-	//some reward for effort?
-	//TODO - sweep abandoned accounts after 2 years, keep track of amounts for future claims
-	//TODO - charge (optional?) fee to screen for spam (allow the ask to post, but mark as spam)
 	
 	function BondMarket() {
-		//let 0 be a special case, so start on id 1
+		//loan and ask id's of 0 are used to convey an empty result, so start on id 1
 		numAsks = 1;
 		numLoans = 1;
 	}
 	
+	//@Note Create a new request for funds of `amount` wei, due in `numHours`, paying back `hourlyReturn` wei per hour per ether borrowed
 	function newAsk(uint amount, uint hourlyReturn, uint numHours) returns (uint) {
 		Ask ask = asks[numAsks++];
 		ask.amount = amount;
@@ -45,9 +68,12 @@ contract BondMarket {
 		return numAsks-1;
 	}
 	
+	//@Note Lend `amount` ether to loan request id `askId`, and return the id of the loan created or 0 on fail
 	function sendLoan(uint askId, uint amount) returns (uint loanId) {
+		//Note that this may use already deposited funds, or include a deposit of new funds
 		deposit();
-		forceCollection(msg.sender); //can't loan out to others when you have outstanding payments
+		forceCollection(msg.sender); //you can't loan out to others when you have outstanding payments due
+
 		Ask ask = asks[askId];
 		if (ask.amount < amount) {
 			amount = ask.amount;
@@ -79,8 +105,7 @@ contract BondMarket {
 		return collectTime(loanId, now);
 	}
 
-	//TODO: make private, was useful to be public for testing
-	//returns how much is collected
+	//collection run at a specified time, useful for testing. users must call collect(loanId) instead
 	function collectTime(uint loanId, uint attime) returns (uint) {
 		Loan loan = loans[loanId];
 		
@@ -104,11 +129,12 @@ contract BondMarket {
 		return amountDue;
 	}
 	
+	//@Note pay back money you borrowed in loan id `loanId`, even if the principle is not yet due
 	function payDownLoan(uint loanId) {
 		payDownLoanTime(loanId, now);
 	}
 	
-	//TODO: make private, just useful to set time for testing
+	//payDownLoan run at a specific time, useful for testing. users must call payDownLoan(loanId)
 	function payDownLoanTime(uint loanId, uint attime) returns (uint paid) {
 		Loan loan = loans[loanId];
 		if (msg.sender != loan.ask.asker) {
@@ -127,7 +153,8 @@ contract BondMarket {
 		paid += payPrinciple(loanId);
 	}
 	
-	//assumes it's okay to pay now, due to borrower opt-in or due date passed
+	//trigger principle payment, which assumes it's okay to withdraw from borrower's balance, perhaps
+	//	due to borrower opt-in or the due date has passed
 	function payPrinciple(uint loanId) private returns (uint amount) {
 		Loan loan = loans[loanId];
 		//don't prepay before outstanding debts are covered
@@ -140,6 +167,7 @@ contract BondMarket {
 		loan.principle -= amount;
 	}
 	
+	//@Note for all loans that `fromUser` has received, send interest and principle to lender as appropriate
 	function forceCollection(address fromUser) {
 		Queue loanQueue = outstandingLoans[fromUser];
 		uint loanCount = loanQueue.vals.length;
@@ -171,15 +199,19 @@ contract BondMarket {
 		vals.length = newSize;
 	}
 	
+	//@Note retrieve your own balance held with this contract
 	function balance() returns (uint) {
 		return balances[msg.sender];
 	}
+
+	//@Note deposit ether to fund a loan or repay one
 	function deposit() {
 		if(msg.value > 0) {
 			balances[msg.sender] += msg.value;
 			forceCollection(msg.sender);
 		}
 	}
+	//@Note withdraw ether from contract, after paying all due payments
 	function widthraw(uint amt) {
 		forceCollection(msg.sender);
 		if (balances[msg.sender] >= amt) {
@@ -194,6 +226,7 @@ contract BondMarket {
 		}
 	}
 
+	//TODO: remove from final contract, but currently useful during testing
 	function time() returns (uint) {
 		return now;
 	}
