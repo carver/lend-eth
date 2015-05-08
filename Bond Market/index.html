@@ -10,7 +10,7 @@
 		<!-- TODO: awesomer time duration input -->
 	<input placeholder="annual interest rate" id="borrow-apr" onchange="previewBorrow()" onkeydown="previewBorrow()" onkeyup="previewBorrow()" />
 	<fieldset ><legend>Preview</legend>
-		<div>Borrowing: <span id="borrow-preview-amount"></span></div>
+		<div>Borrowing: <span id="borrow-preview-amount"></span> ether</div>
 		<div>Principle Due Date: <span id="borrow-preview-due-date"></span></div>
 		<div>ether due each day: <span id="borrow-preview-daily-ether"></span></div>
 		<div>approximate daily interest rate: <span id="borrow-preview-daily-rate"></span>%</div>
@@ -18,6 +18,12 @@
 		<button onclick="confirmBorrow()">Confirm Borrow</button>
 	</fieldset>
 	<h1>Lend</h1>
+	<h3>
+		WARNING: Borrowers can run with your funds; no one guarantees their repayment. Please do your homework on the borrower.
+	</h3>
+	<button onclick="loadAsks()">Show Loan Requests</button>
+	<ul id="asks">
+	</ul>
 <script>
 	function id(theid) {
 		return document.getElementById(theid);
@@ -41,6 +47,38 @@
 	function confirmBorrow() {
 		var ask = calcBorrowParams();
 		contracts["BondMarket"].contract.newAsk(ask.amount, ask.hourlyReturn, ask.duration);
+	}
+	function borrowDetails(askId) {
+		var askVals = contracts["BondMarket"].contract.asks(askId);
+		var ask = {amount: askVals[0], hourlyReturn: askVals[1], asker: askVals[2], duration: askVals[3]};
+		if (ask.amount <= 0) {
+			return null;
+		}
+		var annualRate = (Math.pow(1 + ask.hourlyReturn / ask.amount, 24*365)-1)*100;
+		return "Borrower " + ask.asker +
+			" seeks " + web3.fromWei(ask.amount, "ether") + " ether at " +
+			round(annualRate, 2) + "% APR, due in " + round(ask.duration/24, 2) + " days, Borrow ID " + askId;
+	}
+	function loadAsks() {
+		var numAsks = contracts["BondMarket"].contract.numAsks();
+
+		var ul = id("asks");
+		//remove elements
+		while (ul.firstChild) {
+			ul.removeChild(ul.firstChild);
+		}
+		for (var i = 1; i < numAsks; i++) {
+			var display = borrowDetails(i);
+			if (!display) {
+				continue;
+			}
+			var li = document.createElement("li");
+			li.appendChild(document.createTextNode(display));
+			ul.appendChild(li);
+		}
+	}
+	function round(num, places) {
+		return Math.round(num * Math.pow(10, places)) / Math.pow(10, places);
 	}
 </script>
 </body>

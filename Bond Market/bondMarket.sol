@@ -30,7 +30,7 @@ contract BondMarket {
 		uint duration; //duration in hours
 	}
 	mapping (uint => Ask) public asks;
-	uint numAsks;
+	uint public numAsks;
 	
 	struct Loan {
 		Ask ask;
