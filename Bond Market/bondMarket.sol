@@ -16,6 +16,8 @@ Note some key properties of these loans:
 TODO: track repayment to compile credit history
 TODO: charge optional fee to judge credit and seriousness of new asks
 TODO: compound the interest by adding due interest to principle if the coupon is unpayable due to insufficient funds
+TODO: allow borrower to pledge some minimum amount held in reserve, to be enforced by contract
+	(# hours of interest? % of principle?)
 private:
 TODO: sweep abandoned accounts after 2 years, keep track of amounts for future claims
 TODO: make collectTime() private

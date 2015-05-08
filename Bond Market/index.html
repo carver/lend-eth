@@ -25,9 +25,15 @@
 	<ul id="asks">
 	</ul>
 <script>
+	//utility functions
 	function id(theid) {
 		return document.getElementById(theid);
 	}
+	function round(num, places) {
+		return Math.round(num * Math.pow(10, places)) / Math.pow(10, places);
+	}
+
+	//calculated details for requesting to borrow
 	function calcBorrowParams() {
 		var amount = id('borrow-amount').value;
 		var numHours = id('borrow-duration').value;
@@ -36,6 +42,8 @@
 		var weiPerHour = weiPerHourPerEther * amount;
 		return {amount: web3.toWei(amount, "ether"), hourlyReturn: weiPerHour, duration: numHours};
 	}
+
+	//display preview of details for requesting to borrow
 	function previewBorrow() {
 		var ask = calcBorrowParams();
 		id('borrow-preview-amount').innerText = web3.fromWei(ask.amount, "ether");
@@ -44,10 +52,14 @@
 		id('borrow-preview-daily-rate').innerText = Math.floor(10000 * 100 * (Math.pow(annualGrowth, (1/365)) - 1 )) / 10000;
 		id('borrow-preview-daily-ether').innerText = web3.fromWei(ask.hourlyReturn * 24, "ether");
 	}
+
+	//trigger request to borrow ether now
 	function confirmBorrow() {
 		var ask = calcBorrowParams();
 		contracts["BondMarket"].contract.newAsk(ask.amount, ask.hourlyReturn, ask.duration);
 	}
+
+	//generate the text representation of a request to borrow
 	function borrowDetails(askId) {
 		var askVals = contracts["BondMarket"].contract.asks(askId);
 		var ask = {amount: askVals[0], hourlyReturn: askVals[1], asker: askVals[2], duration: askVals[3]};
@@ -59,6 +71,8 @@
 			" seeks " + web3.fromWei(ask.amount, "ether") + " ether at " +
 			round(annualRate, 2) + "% APR, due in " + round(ask.duration/24, 2) + " days, Borrow ID " + askId;
 	}
+
+	//load all outstanding requests to borrow into the page
 	function loadAsks() {
 		var numAsks = contracts["BondMarket"].contract.numAsks();
 
@@ -76,9 +90,6 @@
 			li.appendChild(document.createTextNode(display));
 			ul.appendChild(li);
 		}
-	}
-	function round(num, places) {
-		return Math.round(num * Math.pow(10, places)) / Math.pow(10, places);
 	}
 </script>
 </body>
