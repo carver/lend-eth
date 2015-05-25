@@ -1,6 +1,6 @@
 <html>
 <head>
-<script>
+<script src="bondMarket.js">
 </script>
 </head>
 <body>
@@ -9,8 +9,9 @@
 	<input type="number" placeholder="hours till due" id="borrow-duration" onchange="previewBorrow()" onkeydown="previewBorrow()" onkeyup="previewBorrow()" />
 		<!-- TODO: awesomer time duration input -->
 	<input placeholder="annual interest rate" id="borrow-apr" onchange="previewBorrow()" onkeydown="previewBorrow()" onkeyup="previewBorrow()" />
-	<fieldset ><legend>Preview</legend>
+	<fieldset ><legend>Borrow Preview</legend>
 		<div>Borrowing: <span id="borrow-preview-amount"></span> ether</div>
+		<!-- TODO: date is misleading here (because start time is based on loan), just show in days or hours -->
 		<div>Principle Due Date: <span id="borrow-preview-due-date"></span></div>
 		<div>ether due each day: <span id="borrow-preview-daily-ether"></span></div>
 		<div>approximate daily interest rate: <span id="borrow-preview-daily-rate"></span>%</div>
@@ -24,6 +25,15 @@
 	<button onclick="loadAsks()">Show Loan Requests</button>
 	<ul id="asks">
 	</ul>
+	<fieldset style="display:none;" id="lend-preview"><legend>Lend Preview</legend>
+		<div>borrower: <span id="lend-borrower"></span></div>
+		<div>Lending: <input type="number" id="lend-amount" /> ether</div>
+		<div>Principle Due Date: <span id="lend-preview-due-date"></span></div>
+		<div>interest collectable each day: <span id="lend-preview-daily-ether"></span> ether</div>
+		<div>approximate daily interest rate: <span id="lend-preview-daily-rate"></span>%</div>
+		<div>warnings: <span id="lend-preview-warnings">None</span></div>
+		<button onclick="confirmLend()">Confirm Lend</button>
+	</fieldset>
 <script>
 	//utility functions
 	function id(theid) {
@@ -76,11 +86,7 @@
 	function loadAsks() {
 		var numAsks = contracts["BondMarket"].contract.numAsks();
 
-		var ul = id("asks");
-		//remove elements
-		while (ul.firstChild) {
-			ul.removeChild(ul.firstChild);
-		}
+		var ul = deleteAsks();
 		for (var i = 1; i < numAsks; i++) {
 			var display = borrowDetails(i);
 			if (!display) {
@@ -88,8 +94,28 @@
 			}
 			var li = document.createElement("li");
 			li.appendChild(document.createTextNode(display));
+			var lend = document.createElement("a");
+			lend.onclick = function () { previewLend(id); };
+			lend.appendChild(document.createTextNode("Lend"))
+			li.appendChild(lend)
 			ul.appendChild(li);
 		}
+	}
+
+	//remove all requests to borrow from page, returning the parent ul tag that was just emptied
+	function deleteAsks() {
+		ul = id("asks");
+		//remove elements
+		while (ul.firstChild) {
+			ul.removeChild(ul.firstChild);
+		}
+		return ul;
+	}
+
+	function previewLend(askId) {
+		deleteAsks();
+		id('lend-preview').style.display="block";
+		//generalize calcBorrowParams()
 	}
 </script>
 </body>

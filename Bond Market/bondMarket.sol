@@ -22,6 +22,7 @@ private:
 TODO: sweep abandoned accounts after 2 years, keep track of amounts for future claims
 TODO: make collectTime() private
 TODO: make payDownLoanTime() private
+TODO: remove the time() debug method
 */
 contract BondMarket {
 	//An outstanding request for a loan
